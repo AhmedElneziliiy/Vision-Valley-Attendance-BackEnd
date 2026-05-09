@@ -1,0 +1,406 @@
+@model CoreProject.ViewModels.AttendanceReportViewModel
+@{
+    ViewData["Title"] = "User Attendance Report";
+    var startDate = ViewBag.StartDate as string;
+    var endDate = ViewBag.EndDate as string;
+    var userId = ViewBag.UserId as int?;
+    var userName = ViewBag.UserName as string;
+    var userDepartment = ViewBag.UserDepartment as string;
+    var userBranch = ViewBag.UserBranch as string;
+}
+
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">User Attendance Report</h2>
+            <p class="text-muted mb-0">Detailed attendance report for @userName</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Reports" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Back to Reports
+            </a>
+            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#filterModal">
+                <i class="bi bi-funnel"></i> Filter
+            </button>
+            <a asp-action="ExportReport" asp-route-startDate="@startDate" asp-route-endDate="@endDate" asp-route-userId="@userId"
+               class="btn btn-success">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Export CSV
+            </a>
+            <a asp-action="ExportReportPdf" asp-route-startDate="@startDate" asp-route-endDate="@endDate" asp-route-userId="@userId"
+               class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf"></i> Export PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- User Info Card -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-circle bg-primary text-white me-3" style="width: 60px; height: 60px; font-size: 24px;">
+                            @userName.Substring(0, 1).ToUpper()
+                        </div>
+                        <div>
+                            <h4 class="mb-1">@userName</h4>
+                            <p class="text-muted mb-0">
+                                <i class="bi bi-building"></i> @userDepartment &nbsp;|&nbsp;
+                                <i class="bi bi-geo-alt"></i> @userBranch
+                            </p>
+                        </div>
+                    </div>
+                    <h5 class="mb-0">
+                        <i class="bi bi-calendar-range"></i>
+                        Report Period: @(DateTime.Parse(startDate).ToString("MMMM dd, yyyy")) - @(DateTime.Parse(endDate).ToString("MMMM dd, yyyy"))
+                    </h5>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge bg-primary fs-6">
+                        <i class="bi bi-calendar3"></i> @Model.Summary.TotalDays Days
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Total Days</p>
+                            <h4 class="mb-0">@Model.Summary.TotalDays</h4>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-calendar3 text-primary fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Working Days</p>
+                            <h4 class="mb-0 text-primary">@Model.Summary.WorkingDays</h4>
+                            <small class="text-muted">Excl. weekends/holidays</small>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-briefcase text-primary fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Present</p>
+                            <h4 class="mb-0 text-success">@Model.Summary.PresentDays</h4>
+                            <small class="text-muted">
+                                @if (Model.Summary.WorkingDays > 0)
+                                {
+                                    @($"{Model.Summary.ActualAttendanceRate:F1}%")
+                                }
+                            </small>
+                        </div>
+                        <div class="bg-success bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-check-circle text-success fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Absent</p>
+                            <h4 class="mb-0 text-danger">@Model.Summary.AbsentDays</h4>
+                            <small class="text-muted">Working days only</small>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-x-circle text-danger fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Weekends</p>
+                            <h4 class="mb-0 text-secondary">@Model.Summary.WeekendDays</h4>
+                            <small class="text-muted">Fri/Sat</small>
+                        </div>
+                        <div class="bg-secondary bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-calendar-x text-secondary fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-2 col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <p class="text-muted mb-1 small">Holidays</p>
+                            <h4 class="mb-0 text-info">@Model.Summary.HolidayDays</h4>
+                            <small class="text-muted">National</small>
+                        </div>
+                        <div class="bg-info bg-opacity-10 p-2 rounded">
+                            <i class="bi bi-sun text-info fs-5"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Statistics Section -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0"><i class="bi bi-graph-up"></i> Detailed Attendance Statistics</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold">Total Days in Period:</td>
+                                <td class="text-end">@Model.Summary.TotalDays days</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold ps-3"><i class="bi bi-dot"></i> Weekend Days (Fri/Sat):</td>
+                                <td class="text-end text-secondary">@Model.Summary.WeekendDays days</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold ps-3"><i class="bi bi-dot"></i> National Holidays:</td>
+                                <td class="text-end text-info">@Model.Summary.HolidayDays days</td>
+                            </tr>
+                            <tr class="border-top">
+                                <td class="fw-bold text-primary">Working Days (Should be Present):</td>
+                                <td class="text-end fw-bold text-primary">@Model.Summary.WorkingDays days</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm table-borderless">
+                        <tbody>
+                            <tr>
+                                <td class="fw-bold text-success">Days Actually Present:</td>
+                                <td class="text-end fw-bold text-success">@Model.Summary.PresentDays days</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold text-danger">Days Absent (Working Days):</td>
+                                <td class="text-end fw-bold text-danger">@Model.Summary.AbsentDays days</td>
+                            </tr>
+                            <tr class="border-top">
+                                <td class="fw-bold">Actual Attendance Rate:</td>
+                                <td class="text-end fw-bold">
+                                    @if (Model.Summary.WorkingDays > 0)
+                                    {
+                                        <span class="badge bg-@(Model.Summary.ActualAttendanceRate >= 90 ? "success" : Model.Summary.ActualAttendanceRate >= 75 ? "warning" : "danger") fs-6">
+                                            @Model.Summary.ActualAttendanceRate.ToString("F1")%
+                                        </span>
+                                        <small class="text-muted d-block">(@Model.Summary.PresentDays out of @Model.Summary.WorkingDays working days)</small>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Total Hours Worked:</td>
+                                <td class="text-end">@Model.Summary.TotalHours</td>
+                            </tr>
+                            <tr>
+                                <td class="fw-bold">Average Hours/Day:</td>
+                                <td class="text-end">@Model.Summary.AverageHours</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">Attendance Distribution</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="attendanceChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">Daily Work Hours Trend</h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="hoursChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Records Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">Detailed Attendance Records</h5>
+        </div>
+        <div class="card-body">
+            @if (Model.Attendances != null && Model.Attendances.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>First Check In</th>
+                                <th>Last Check Out</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>HR Posted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var attendance in Model.Attendances.OrderByDescending(a => a.Date))
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@attendance.Date.ToString("MMM dd, yyyy")</strong>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">@attendance.Date.DayOfWeek</span>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(attendance.FirstCheckIn))
+                                        {
+                                            <span class="badge bg-success-subtle text-success">
+                                                <i class="bi bi-box-arrow-in-right"></i> @attendance.FirstCheckIn
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(attendance.LastCheckOut))
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger">
+                                                <i class="bi bi-box-arrow-right"></i> @attendance.LastCheckOut
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <strong>@attendance.DurationDisplay</strong>
+                                    </td>
+                                    <td>
+                                        <span class="badge @attendance.StatusClass">
+                                            @attendance.Status
+                                        </span>
+                                    </td>
+                                    <td>
+                                        @if (attendance.HRPosted)
+                                        {
+                                            <span class="badge bg-primary" title="Posted by @attendance.HRUserName on @attendance.HRPostedDate?.ToString("MMM dd, yyyy")">
+                                                <i class="bi bi-check-circle-fill"></i> Posted
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-clock"></i> Pending
+                                            </span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-file-earmark-text display-1 text-muted"></i>
+                    <p class="mt-3 text-muted">No attendance records found for the selected period.</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Filter Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" aria-labelledby="filterModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filterModalLabel">Filter Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="UserReport" method="get">
+                <input type="hidden" name="userId" value="@userId" />
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" class="form-control" id="startDate" name="startDate" value="@startDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" class="form-control" id="endDate" name="endDate" value="@endDate">
+                    </div>
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="button" class="btn btn-outline-secondary" onclick="setQuickFilter('week')">This Week</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setQuickFilter('month')">This Month</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setQuickFilter('lastMonth')">Last Month</button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="setQuickFilter('quarter')">This Quarter</button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Apply Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        window.chartData = {
+            presentDays: @Model.Summary.PresentDays,
+            absentDays: @Model.Summary.AbsentDays,
+            attendances: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Attendances.OrderBy(a => a.Date).Take(30)))
+        };
+    </script>
+    <script src="~/js/attendance-report.js" asp-append-version="true"></script>
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/attendance-common.css" asp-append-version="true" />
+}
